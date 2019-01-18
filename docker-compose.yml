@@ -1,0 +1,60 @@
+version: "3"
+
+services:
+  ### Php-fpm
+  app:
+    build: php
+    volumes:
+      - ../:/app
+    depends_on:
+      - db
+
+  ### Nginx
+  nginx:
+    build:
+      context: ./nginx
+      args:
+        FRONTEND_HOST_INFO: ${FRONTEND_HOST_INFO}
+    ports:
+      - 80:80
+    volumes:
+      - ../:/app
+      - ./nginx/vhost.conf:/etc/nginx/conf.d/vhost.conf
+    depends_on:
+      - app
+    env_file:
+      - .env
+
+  ### MySQL
+  db:
+    build:
+      context: ./mysql
+      args:
+        MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+        MYSQL_DATABASE: ${MYSQL_DATABASE}
+        MYSQL_USER: ${MYSQL_USER}
+        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - 3316:3306
+    env_file:
+      - .env
+
+  ### phpMyAdmin
+  phpmyadmin:
+    build: ./phpmyadmin
+    environment:
+      PMA_HOST: db
+      PMA_ARBITRARY: 1
+    ports:
+      - 8001:80
+    links:
+      - db:db
+
+  ### Redis
+  redis:
+    build: ./redis
+    volumes:
+      - ./redis/data:/data
+    ports:
+      - 6379:6379
+      - 6380:6380
